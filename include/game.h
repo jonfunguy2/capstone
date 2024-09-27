@@ -41,6 +41,7 @@ private:
     std::unique_ptr<Player>                  player_;
     std::vector<std::unique_ptr<GameObject>> game_objects_;
     // added code
+    bool moving_                             = false;
     CameraMode camera_mode_                  = CameraMode::kDynamic;
     Camera2D camera_                         {0};
     // end of added code

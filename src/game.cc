@@ -102,15 +102,12 @@ void Game::Run() {
         }
 
         // added code (camera)
-        if(camera_mode_ == CameraMode::kDynamic){
+        if(camera_mode_ == CameraMode::kDynamic && !moving_){
             UpdateCamera(CameraMode::kDynamic, CameraAxis::kBoth);
         }
-        else{
+        else if(camera_mode_ == CameraMode::kFixed && !moving_){
             UpdateCamera(CameraMode::kFixed, CameraAxis::kBoth);
         }
-        camera_.zoom += ((float)GetMouseWheelMove()*0.05f);
-        if (camera_.zoom > 1.25f) camera_.zoom = 1.25f;
-        else if (camera_.zoom < 0.75f) camera_.zoom = 0.75f;
         // end of added code (camera)
 
         window_.BeginDrawing();
@@ -137,8 +134,11 @@ rl::Texture LoadTexture(const fs::path& texture_path) {
     return rl::Texture(texture_path.generic_string());
 }
 
-// Added camera update functions
+// Added camera update function
 void Game::UpdateCamera(CameraMode camera_type, CameraAxis camera_axis){
+    camera_.zoom += ((float)GetMouseWheelMove()*0.05f);
+    if (camera_.zoom > 1.25f) camera_.zoom = 1.25f;
+    else if (camera_.zoom < 0.75f) camera_.zoom = 0.75f;
     if(camera_type == CameraMode::kDynamic){
         static float minSpeed = 100;
         static float minEffectLength = 10;
@@ -217,49 +217,39 @@ void Game::UpdateCamera(CameraMode camera_type, CameraAxis camera_axis){
         if (min.y > 0) camera_.offset.y = height/2.0 - min.y;*/
     }
 }
-// End of added camera update functions
+// End of added camera update function
 
 /**
  * @brief Handle keyboard events, for example arrow keys, space bar, etc.
  */
 // code for this function has been changed for testing
-void Game::HandleKeyboardEvents() {
-    std::cout << "camera's x offset = " << camera_.offset.x << " and camera's y offset =  " << camera_.offset.y << std::endl;
-    int key = GetKeyPressed();
-    switch (key) {
-        // Camera
-        case KEY_C:
-            if(camera_mode_ == CameraMode::kDynamic){
-                camera_mode_ = CameraMode::kFixed;
-            }
-            else{
-                camera_mode_ = CameraMode::kDynamic;
-            }
-            break;
-        // Inventory
-        case KEY_E:
-            break;
-        // Pause
-        case KEY_P:
-            break;
-        default:
-            break;
-    };
-    if(IsKeyDown(KEY_A)){
-        player_->Move(Player::Direction::kLeft);
+    void Game::HandleKeyboardEvents() {
+        std::cout << "camera's x offset = " << camera_.offset.x << " and camera's y offset =  " << camera_.offset.y << std::endl;
+        int key = GetKeyPressed();
+        switch (key) {
+            // Camera
+            case KEY_C:
+                if(camera_mode_ == CameraMode::kDynamic){
+                    camera_mode_ = CameraMode::kFixed;
+                }
+                else{
+                    camera_mode_ = CameraMode::kDynamic;
+                }
+                break;
+            // Inventory
+            case KEY_E:
+                break;
+            // Pause
+            case KEY_P:
+                break;
+            default:
+                break;
+        };
+        if(IsKeyDown(KEY_A)){player_->Move(Player::Direction::kLeft); UpdateCamera(CameraMode::kDynamic, CameraAxis::kLeftX); moving_ = true;}
+        if(IsKeyDown(KEY_D)){player_->Move(Player::Direction::kRight); UpdateCamera(CameraMode::kDynamic, CameraAxis::kRightX); moving_ = true;}
+        if(IsKeyDown(KEY_W)){player_->Move(Player::Direction::kUp); UpdateCamera(CameraMode::kDynamic, CameraAxis::kUpY); moving_ = true;}
+        if(IsKeyDown(KEY_S)){player_->Move(Player::Direction::kDown); UpdateCamera(CameraMode::kDynamic, CameraAxis::kDownY); moving_ = true;}
+        if (!IsKeyDown(KEY_A) && !IsKeyDown(KEY_D) && !IsKeyDown(KEY_W) && !IsKeyDown(KEY_S)){player_->Move(Player::Direction::kNone); moving_ = false;}
     }
-    if(IsKeyDown(KEY_D)){
-        player_->Move(Player::Direction::kRight);
-    }
-    if(IsKeyDown(KEY_W)){
-        player_->Move(Player::Direction::kUp);
-    }
-    if(IsKeyDown(KEY_S)){
-        player_->Move(Player::Direction::kDown);
-    }
-    if (!IsKeyDown(KEY_A) && !IsKeyDown(KEY_D) && !IsKeyDown(KEY_W) && !IsKeyDown(KEY_S)){
-        player_->Move(Player::Direction::kNone);
-    }
-}
 
 }  // namespace game
