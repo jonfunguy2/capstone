@@ -18,11 +18,17 @@ Game::Game(unsigned int screen_width, unsigned int screen_height,
 }
 
 void Game::Run() {
+
+    // added code (camera)
+    camera_.offset = { window_.GetWidth()/2.5f, window_.GetHeight()/2.0f };
+    camera_.rotation = 0.0f;
+    camera_.zoom = 1.0f;
+    // end of added code (camera)
+
     std::string player_texture_path =
         (resource_path_ / "sprites" / "jenny-walking.png").generic_string();
 
     rl::Texture player_texture = rl::Texture(player_texture_path);
-
     Player player(rl::Vector2(static_cast<float>(screen_width_) / 5,
                               static_cast<float>(screen_height_) / 5),
                   std::move(player_texture), rl::Vector2{10, 10});
@@ -34,6 +40,11 @@ void Game::Run() {
 
     rl::Texture background_texture = rl::Texture(test_background_texture_path);
 
+    // added code for testing
+    player_->SetPositionX(window_.GetWidth() / 2 - 64);
+    player_->SetPositionY(window_.GetHeight() / 2 - 64);
+    // end of added code for testing
+
     while (!window_.ShouldClose()) {
         if (window_.IsResized()) {
             HandleResize();
@@ -43,7 +54,6 @@ void Game::Run() {
         }
 
         HandleKeyboardEvents();
-
         rl::Rectangle source_rec = {
             0.0F, 0.0F, static_cast<float>(background_texture.GetWidth()),
             static_cast<float>(background_texture.GetHeight())};
@@ -58,6 +68,7 @@ void Game::Run() {
                                   static_cast<float>(window_.GetWidth()),
                                   static_cast<float>(window_.GetHeight())};
 
+        // this if statement has been changed for testing
         if (ratio > 16.0F / 9.0F) {
             float width =
                 static_cast<float>(window_.GetHeight()) * (16.0F / 9.0F);
@@ -66,10 +77,10 @@ void Game::Run() {
             dest_rec.y = 0.0F;
             dest_rec.width = width;
 
-            player_->SetPositionX(dest_rec.x + dest_rec.width / 6);
-            player_->SetPositionY(dest_rec.y + dest_rec.height * 3 / 5);
+            //player_->SetPositionX(dest_rec.x + dest_rec.width / 6); commented out for testing
+            //player_->SetPositionY(dest_rec.y + dest_rec.height * 3 / 5); commented out for testing
 
-        } else {
+        } else if (ratio <= 16.0F / 9.0F) {
             float height =
                 static_cast<float>(window_.GetWidth()) * (9.0F / 16.0F);
 
@@ -77,12 +88,33 @@ void Game::Run() {
             dest_rec.y = (window_.GetHeight() - height) / 2;
             dest_rec.height = height;
 
-            player_->SetPositionX(dest_rec.x + dest_rec.width / 6);
-            player_->SetPositionY(dest_rec.y + dest_rec.height * 7 / 10);
+            //player_->SetPositionX(dest_rec.x + dest_rec.width / 6); commented out for testing
+            //player_->SetPositionY(dest_rec.y + dest_rec.height * 7 / 10); commented out for testing
+        }
+        else{
+            float height =
+                static_cast<float>(window_.GetWidth()) * (9.0F / 16.0F);
+
+            dest_rec.x = 0.0F;
+            dest_rec.y = (window_.GetHeight() - height) / 2;
+            dest_rec.height = height;
+
         }
 
-        window_.BeginDrawing();
+        // added code (camera)
+        if(camera_mode_ == CameraMode::kDynamic){
+            UpdateCamera(CameraMode::kDynamic, CameraAxis::kBoth);
+        }
+        else{
+            UpdateCamera(CameraMode::kFixed, CameraAxis::kBoth);
+        }
+        camera_.zoom += ((float)GetMouseWheelMove()*0.05f);
+        if (camera_.zoom > 1.25f) camera_.zoom = 1.25f;
+        else if (camera_.zoom < 0.75f) camera_.zoom = 0.75f;
+        // end of added code (camera)
 
+        window_.BeginDrawing();
+        BeginMode2D(camera_);
         window_.ClearBackground(SPACE);
 
         background_texture.Draw(source_rec, dest_rec);
@@ -90,7 +122,7 @@ void Game::Run() {
         player_->Draw(scale_);
 
         dest_rec.DrawLines(rl::Color::RayWhite(), 2.0F);
-
+        EndMode2D();
         window_.EndDrawing();
     }
 }
@@ -105,19 +137,104 @@ rl::Texture LoadTexture(const fs::path& texture_path) {
     return rl::Texture(texture_path.generic_string());
 }
 
+// Added camera update functions
+void Game::UpdateCamera(CameraMode camera_type, CameraAxis camera_axis){
+    if(camera_type == CameraMode::kDynamic){
+        static float minSpeed = 100;
+        static float minEffectLength = 10;
+        static float fractionSpeed = 1.2f;
+        Vector2 diff = Vector2Subtract(player_->GetPosition(), camera_.target);
+        float length = Vector2Length(diff);
+
+        if (length > minEffectLength)
+        {
+            float speed = fmaxf(fractionSpeed*length, minSpeed);
+            camera_.target = Vector2Add(camera_.target, Vector2Scale(diff, speed*GetFrameTime()/length));
+        }
+
+        if(camera_axis == CameraAxis::kLeftX){
+            if(camera_.offset.x >= window_.GetWidth()){
+            camera_.offset.x = window_.GetWidth();
+            }
+            else {
+                camera_.offset.x += 10.0f;
+            }
+        }
+        else if(camera_axis == CameraAxis::kRightX){
+            if(camera_.offset.x <= 0.0f){
+            camera_.offset.x = 0.0f;
+            }
+            else {
+                camera_.offset.x -= 10.0f;
+            }
+        }
+        else if(camera_axis == CameraAxis::kUpY){
+            if(camera_.offset.y >= window_.GetHeight()*1.25f){
+            camera_.offset.y = window_.GetHeight()*1.25f;
+            }
+            else {
+                camera_.offset.y += 10.0f;
+            }
+        }
+        else if(camera_axis == CameraAxis::kDownY){
+            if(camera_.offset.y <= -window_.GetHeight()/2.0f){
+            camera_.offset.y = -window_.GetHeight()/2.0f;
+            }
+            else {
+                camera_.offset.y -= 10.0f;
+            }
+        }
+        else{
+            if(camera_.offset.x > window_.GetWidth()/1.96f){
+            camera_.offset.x -= 10.0f;
+            }
+            else if (camera_.offset.x < window_.GetWidth()/2.0f){
+                camera_.offset.x += 10.0f;
+            }
+            if(camera_.offset.y > window_.GetHeight()/1.96f){
+            camera_.offset.y -= 10.0f;
+            }
+            else if (camera_.offset.y < window_.GetHeight()/2.0f){
+                camera_.offset.y += 10.0f;
+            }
+        }
+    }
+    else{
+        /*camera_.target = player_->GetPosition();
+        camera_.offset = { window_.GetWidth()/2.0f, window_.GetHeight()/2.0f };
+        float minX = 1000, minY = 1000, maxX = -1000, maxY = -1000;
+        
+        minX = fminf(source_rec.x, minX);
+        maxX = fmaxf(source_rec.x + width, maxX);
+        minY = fminf(source_rec.y, minY);
+        maxY = fmaxf(source_rec.y + height, maxY);
+        
+        Vector2 max = GetWorldToScreen2D({ maxX, maxY }, camera_);
+        Vector2 min = GetWorldToScreen2D({ minX, minY }, camera_);
+        if (max.x < width) camera_.offset.x = width - (max.x - width/2.0);
+        if (max.y < height) camera_.offset.y = height - (max.y - height/2.0);
+        if (min.x > 0) camera_.offset.x = width/2.0 - min.x;
+        if (min.y > 0) camera_.offset.y = height/2.0 - min.y;*/
+    }
+}
+// End of added camera update functions
+
 /**
  * @brief Handle keyboard events, for example arrow keys, space bar, etc.
  */
+// code for this function has been changed for testing
 void Game::HandleKeyboardEvents() {
-    int key = rl::Keyboard::GetKeyPressed();
+    std::cout << "camera's x offset = " << camera_.offset.x << " and camera's y offset =  " << camera_.offset.y << std::endl;
+    int key = GetKeyPressed();
     switch (key) {
-        // Move player left
-        case KEY_A:
-            player_->Move(Player::Direction::kLeft);
-            break;
-        // Move player right
-        case KEY_D:
-            player_->Move(Player::Direction::kRight);
+        // Camera
+        case KEY_C:
+            if(camera_mode_ == CameraMode::kDynamic){
+                camera_mode_ = CameraMode::kFixed;
+            }
+            else{
+                camera_mode_ = CameraMode::kDynamic;
+            }
             break;
         // Inventory
         case KEY_E:
@@ -128,6 +245,21 @@ void Game::HandleKeyboardEvents() {
         default:
             break;
     };
+    if(IsKeyDown(KEY_A)){
+        player_->Move(Player::Direction::kLeft);
+    }
+    if(IsKeyDown(KEY_D)){
+        player_->Move(Player::Direction::kRight);
+    }
+    if(IsKeyDown(KEY_W)){
+        player_->Move(Player::Direction::kUp);
+    }
+    if(IsKeyDown(KEY_S)){
+        player_->Move(Player::Direction::kDown);
+    }
+    if (!IsKeyDown(KEY_A) && !IsKeyDown(KEY_D) && !IsKeyDown(KEY_W) && !IsKeyDown(KEY_S)){
+        player_->Move(Player::Direction::kNone);
+    }
 }
 
 }  // namespace game

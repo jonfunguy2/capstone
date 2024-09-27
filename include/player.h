@@ -19,7 +19,10 @@ public:
     void Update() override;
 
     void Move(Direction direction) override;
-
+    // added function get velocity
+    Vector2 GetVelocity();
+    // end of added function get velocity
+    
     friend auto operator<<(std::ostream& os,
                            const Player& player) -> std::ostream&;
 

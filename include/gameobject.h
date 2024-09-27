@@ -40,8 +40,8 @@ protected:
 class Moveable : virtual public GameObject {
 public:
     Moveable() = default;
-
-    enum class Direction { kUp, kDown, kLeft, kRight };
+    // added none as a direction
+    enum class Direction { kUp, kDown, kLeft, kRight, kNone};
 
     virtual void Move(Direction direction) = 0;
 };

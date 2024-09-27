@@ -1,27 +1,76 @@
 #include "player.h"
-
+#include <cmath>
 namespace game {
 
 Player::Player(const rl::Vector2& position, rl::Texture&& texture,
                const rl::Vector2& velocity)
     : Textured(std::move(texture)), GameObject(position) {}
 
+// code for this function has been changed for testing
 void Player::Move(Direction direction) {
+    float deceleration = 0.95f;
     switch (direction) {
         case Direction::kUp:
-            position_.y -= velocity_.y;
+            if(velocity_.y <= -8){
+                velocity_.y = -8;
+            }
+            else{
+                velocity_.y -= 2;
+            }
+            position_.y += velocity_.y;
             break;
         case Direction::kDown:
+            if(velocity_.y >= +8){
+                velocity_.y = +8;
+            }
+            else{
+                velocity_.y += 2;
+            }
             position_.y += velocity_.y;
             break;
         case Direction::kLeft:
-            position_.x -= velocity_.x;
-            break;
-        case Direction::kRight:
+            if(velocity_.x <= -8){
+                velocity_.x = -8;
+            }
+            else{
+                velocity_.x -= 2;
+            }
             position_.x += velocity_.x;
             break;
+        case Direction::kRight:
+            if(velocity_.x >= 8){
+                velocity_.x = 8;
+            }
+            else{
+                velocity_.x += 2;
+            }
+            position_.x += velocity_.x;
+            break;
+        // added code (movement)
+        case Direction::kNone:
+            if(abs(velocity_.x) >= deceleration || abs(velocity_.y) >= deceleration){
+                velocity_.x *= deceleration;
+                velocity_.y *= deceleration;
+                position_.x += velocity_.x;
+                position_.y += velocity_.y;
+            }
+            else{
+                velocity_.x = 0;
+                velocity_.y = 0;
+            }
+            break;
+        default:
+            break;
+        // end of added code (movement)
     }
 }
+// end of function that was changed
+
+// added function get velocity
+Vector2 Player::GetVelocity(){
+    return Vector2{velocity_.x, velocity_.y};
+}
+// end of added function get velocity
 
 auto operator<<(std::ostream& os, const Player& player) -> std::ostream& {
     os << "Player position: " << player.position_.x << ", "
@@ -72,5 +121,7 @@ void Player::Draw(float scale, rl::Vector2 position) {
 }
 
 void Player::Update() {}
+
+
 
 }  // namespace game
