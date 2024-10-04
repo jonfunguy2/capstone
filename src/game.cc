@@ -5,6 +5,7 @@
 #include "colors.h"
 #include "player.h"
 #include "raylib.h"
+#include "platform.h"
 
 namespace game {
 
@@ -39,12 +40,20 @@ void Game::Run() {
                        3 * static_cast<float>(screen_height_) / 5});
     camera_.SetZoom(1.0f);
 
+    Platform platform(rl::Vector2{0.0f,533.0f}, rl::Vector2{1000.0f,50.0f}, rl::Color::Blue());
+
+    auto platform_object = std::make_unique<GameObject>(std::move(platform));
+
+    AddGameObject(std::move(platform_object));
+
     while (!window_.ShouldClose()) {
         if (window_.IsResized()) {
             HandleResize();
         }
 
         HandleKeyboardEvents();
+
+        HandleCollisions();
 
         camera_.SetTarget(Vector2{player_->GetPositionX() + 64,
                                   3 * static_cast<float>(screen_height_) / 5});
@@ -86,6 +95,8 @@ void Game::Run() {
         window_.ClearBackground(game::SPACE);
 
         background_texture.Draw(bg_source_rec_, bg_dest_rec_);
+
+        platform.Draw(scale_);
 
         std::string msg =
             "Press F to toggle camera mode. Current mode: " +
@@ -137,6 +148,10 @@ void Game::CorrectPlayerPosition() {
             camera_.AddOffsetX(amount);
         }
     }
+}
+
+void Game::AddGameObject(std::unique_ptr<GameObject> object){
+    game_objects_.push_back(object);
 }
 
 }  // namespace game

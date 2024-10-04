@@ -25,6 +25,16 @@ void Game::HandleKeyboardEvents() {
             player_->SetPositionX(player_->GetPositionX() + 10);
         }
     }
+    //TODO make a good jump
+    if (IsKeyDown(KEY_SPACE)) {
+        bg_source_rec_.y -= 100;
+        bg_dest_rec_.y -= 100;
+        if (camera_.Mode() == Camera::Mode::kFixed &&
+            player_->GetPositionY() <
+                bg_dest_rec_.y + bg_dest_rec_.height - 128) {
+            player_->SetPositionY(player_->GetPositionY() - 100);
+        }
+    }
     if (IsKeyDown(KEY_UP)) {
         if (camera_.Zoom() > 2.0f) {
             return;
@@ -40,6 +50,13 @@ void Game::HandleKeyboardEvents() {
         camera_.ToggleMode();
     }
     CorrectPlayerPosition();
+}
+
+/**
+ * @brief Handles collisions between game objects
+ */
+void Game::HandleCollisions(){
+    
 }
 
 }  // namespace game
