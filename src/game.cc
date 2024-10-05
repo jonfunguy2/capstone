@@ -40,11 +40,14 @@ void Game::Run() {
                        3 * static_cast<float>(screen_height_) / 5});
     camera_.SetZoom(1.0f);
 
-    Platform platform(rl::Vector2{0.0f,533.0f}, rl::Vector2{1000.0f,50.0f}, rl::Color::Blue());
+    Platform floor_object(rl::Vector2{0.0f,533.0f}, rl::Vector2{1000.0f,50.0f}, rl::Color::Blue());
+    Platform wall_object(rl::Vector2{0.0f,333.0f}, rl::Vector2{50.0f,200.0f}, rl::Color::Yellow());
 
-    auto platform_object = std::make_unique<GameObject>(std::move(platform));
+    std::unique_ptr<GameObject> floor = std::make_unique<Platform>(std::move(floor_object));
+    std::unique_ptr<GameObject> wall = std::make_unique<Platform>(std::move(wall_object));
 
-    AddGameObject(std::move(platform_object));
+    AddGameObject(std::move(floor));
+    AddGameObject(std::move(wall));
 
     while (!window_.ShouldClose()) {
         if (window_.IsResized()) {
@@ -96,7 +99,9 @@ void Game::Run() {
 
         background_texture.Draw(bg_source_rec_, bg_dest_rec_);
 
-        platform.Draw(scale_);
+        for(auto& obj:game_objects_) {
+            obj->Draw();
+        }
 
         std::string msg =
             "Press F to toggle camera mode. Current mode: " +
@@ -151,7 +156,7 @@ void Game::CorrectPlayerPosition() {
 }
 
 void Game::AddGameObject(std::unique_ptr<GameObject> object){
-    game_objects_.push_back(object);
+    game_objects_.push_back(std::move(object));
 }
 
 }  // namespace game
